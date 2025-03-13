@@ -1,3 +1,10 @@
+# 📊 Red Snapper Catch Forecasting
+
+## 🔍 Overview
+This project aims to forecast Red Snapper catch volumes in the Gulf of Mexico to assist fisheries management in making informed decisions. Accurate forecasts help in maintaining sustainable fishing practices and ensuring the long-term viability of Red Snapper populations.
+
+## 📂 Project Structure
+/forecasting_redsnapper ├── data/ # Raw and processed datasets ├── notebooks/ # Jupyter notebooks for EDA & modeling ├── src/ # Python scripts for data processing & modeling ├── models/ # Saved models ├── reports/ # Visualizations, results, and summary ├── README.md # Project documentation ├── requirements.txt # Dependencies ├── .gitignore # Files to ignore
 
 ## 📊 Data
 - **Source**: [Gulf of Mexico Red Snapper 2023 Annual Report](https://noaa-sero.s3.amazonaws.com/drop-files/cs/2023_RS_AnnualReport_FINAL.pdf)
@@ -22,3 +29,8 @@
    ```bash
    git clone https://github.com/andrewrjames/forecasting_redsnapper.git
    cd forecasting_redsnapper
+
+## Future Improvements
+- Utilize another data transformations method, such as fourier transformation to model dynamic harmonic regression​
+- Employ ensemble methods that combine multiple forecasting approaches can improve model performance​
+- Use more advanced models, such as Prophet or GARCH
