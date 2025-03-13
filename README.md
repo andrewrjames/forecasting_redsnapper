@@ -23,9 +23,7 @@ This project aims to forecast Red Snapper catch volumes in the Gulf of Mexico to
 ├── requirements.R            # Dependencies (list of required R packages)
 ├── README.md                 # Project documentation
 ├── .gitignore                # Files to ignore (e.g., large datasets, models)
-
-
-
+```
 
 ## 📊 Data
 - **Source**: [Gulf of Mexico Red Snapper 2023 Annual Report](https://noaa-sero.s3.amazonaws.com/drop-files/cs/2023_RS_AnnualReport_FINAL.pdf)
