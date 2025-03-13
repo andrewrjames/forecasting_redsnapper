@@ -4,7 +4,31 @@
 This project aims to forecast Red Snapper catch volumes in the Gulf of Mexico to assist fisheries management in making informed decisions. Accurate forecasts help in maintaining sustainable fishing practices and ensuring the long-term viability of Red Snapper populations.
 
 ## 📂 Project Structure
-/forecasting_redsnapper ├── data/ # Raw and processed datasets │ ├── raw/ # Original dataset (if allowed) │ ├── processed/ # Cleaned and transformed datasets ├── notebooks/ # R Markdown notebooks for analysis & modeling │ ├── 01_eda.Rmd # Exploratory Data Analysis │ ├── 02_feature_eng.Rmd # Feature Engineering │ ├── 03_modeling.Rmd # Forecasting Models (ARIMA, SARIMA, etc.) │ ├── 04_evaluation.Rmd # Model Evaluation & Metrics ├── src/ # Reusable R scripts for processing & modeling │ ├── data_preprocessing.R # Data cleaning & feature engineering │ ├── model_training.R # Model training (ARIMA, SARIMA, etc.) │ ├── model_evaluation.R # Evaluation metrics & visualization ├── models/ # Saved trained models │ ├── best_model.rds # Serialized R model file ├── reports/ # Visualizations, summary tables, and analysis results │ ├── figures/ # Plots and graphs │ ├── summary.md # Key findings and interpretations ├── scripts/ # Standalone R scripts for execution │ ├── run_model.R # Script to run the forecasting pipeline ├── requirements.R # Dependencies (list of required R packages) ├── README.md # Project documentation ├── .gitignore # Files to ignore (e.g., large datasets, models) ├── forecasting_redsnapper.Rproj # R project file (for RStudio users)
+/forecasting_redsnapper
+  ├── data/                 # Raw and processed datasets (avoid uploading large files)
+  │   ├── raw/              # Original dataset (if allowed)
+  │   ├── processed/        # Cleaned and transformed datasets
+  ├── notebooks/            # R Markdown notebooks for analysis & modeling
+  │   ├── 01_eda.Rmd        # Exploratory Data Analysis
+  │   ├── 02_feature_eng.Rmd # Feature Engineering
+  │   ├── 03_modeling.Rmd   # Forecasting Models (ARIMA, SARIMA, etc.)
+  │   ├── 04_evaluation.Rmd # Model Evaluation & Metrics
+  ├── src/                  # Reusable R scripts for processing & modeling
+  │   ├── data_preprocessing.R  # Data cleaning & feature engineering
+  │   ├── model_training.R      # Model training (ARIMA, SARIMA, etc.)
+  │   ├── model_evaluation.R    # Evaluation metrics & visualization
+  ├── models/               # Saved trained models (if necessary)
+  │   ├── best_model.rds    # Serialized R model file
+  ├── reports/              # Visualizations, summary tables, and analysis results
+  │   ├── figures/          # Plots and graphs
+  │   ├── summary.md        # Key findings and interpretations
+  ├── scripts/              # Standalone R scripts for execution
+  │   ├── run_model.R       # Script to run the forecasting pipeline
+  ├── requirements.R        # Dependencies (list of required R packages)
+  ├── README.md             # Project documentation
+  ├── .gitignore            # Files to ignore (e.g., large datasets, models)
+  ├── forecasting_redsnapper.Rproj  # R project file (for RStudio users)
+
 
 
 ## 📊 Data
