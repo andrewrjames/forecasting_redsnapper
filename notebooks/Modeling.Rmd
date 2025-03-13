@@ -1,0 +1,404 @@
+---
+title: "Forecasting Red Snapper"
+author: "Andrew Rafael James"
+date: "2025-03-02"
+output: html_document
+---
+
+# Load Dataset
+```{r setup, warning = FALSE, message = FALSE}
+library(dplyr)
+library(fpp)
+library(forecast)
+library(tidyverse)
+
+# Load red_snapper data
+load("/Users/andrewrafaeljames/Documents/Time Series and Forecasting/Group Project/Data/red_snapper.rda")
+
+head(red_snapper)
+```
+
+
+# Transform red_snapper into time-series object
+
+summary(rs_ts)
+
+``` {r transform}
+library(tsibble)
+rs_ts = ts(red_snapper, frequency = 12, start = c(2007, 1))
+
+# Plot Monthly Number of Red Snapper Harvested in Gulf of Mexico
+# Data shows increasing trend with seasonality. Variance also looks increasing overtime
+autoplot(rs_ts[, 'landings']) + labs(title = 'Monthly Number of Red Snapper Landings\n in Gulf of Mexico between 2007-2023',
+                                     y = '# of Landings') + theme(plot.title = element_text(size = 14, hjust = 0.5),
+        plot.margin = margin(t = 15, r = 10, b = 10, l = 10))
+
+test = ts(red_snapper, frequency = 12, start = c(2007, 1), end = c(2009, 12))
+autoplot(test[, 'landings']) + labs(title = 'Monthly Number of Red Snapper Landings in Gulf of Mexico between 2007-2023',
+                                     y = '# of Landings')
+
+ggseasonplot(rs_ts[, 'landings'], continuous = TRUE, main = 'Seasonal Plot of Number of Red Snapper Landings Across Months') + labs(y = 'landings') + theme(plot.title = element_text(size = 14, hjust = 0.5),
+        plot.margin = margin(t = 15, r = 10, b = 10, l = 10))
+ggsubseriesplot(rs_ts[, 'landings'], main = 'Seasonal Subseries Plot of Number of Red Snapper Landings') + labs(y = 'landings') + theme(plot.title = element_text(size = 14, hjust = 0.5),
+        plot.margin = margin(t = 15, r = 10, b = 10, l = 10))
+```
+
+# Moving Average Smoothing
+
+``` {r moving_average_smoothing}
+library(TTR)
+library(gridExtra)
+
+sma_4 = SMA(rs_ts[, 'landings'], n = 4)
+sma_6 = SMA(rs_ts[, 'landings'], n = 6)
+sma_8 = SMA(rs_ts[, 'landings'], n = 8)
+sma_12 = SMA(rs_ts[, 'landings'], n = 12)
+sma_16 = SMA(rs_ts[, 'landings'], n = 16)
+
+
+time_index = time(rs_ts)
+ma = data.frame(time = time_index, landings = rs_ts[, 'landings'], sma_4 = as.numeric(sma_4),
+               sma_6 = as.numeric(sma_6), sma_8 = as.numeric(sma_8), sma_12 = as.numeric(sma_12))
+p1 = ggplot(data = ma, aes(x = time)) + geom_line(aes(y = landings), color = 'grey') +
+  geom_line(aes(y = sma_4), color = 'red') + labs(title = "4-Month Moving Average Smoothing") +
+  theme(plot.title = element_text(size = 11, face = "bold", hjust = 0.5, margin = margin(b = 10)))
+
+p2 = ggplot(data = ma, aes(x = time)) + geom_line(aes(y = landings), color = 'grey') +
+  geom_line(aes(y = sma_6), color = 'red') + labs(title = "6-Month Moving Average Smoothing") +
+  theme(plot.title = element_text(size = 11, face = "bold", hjust = 0.5, margin = margin(b = 10)))
+
+p3 = ggplot(data = ma, aes(x = time)) + geom_line(aes(y = landings), color = 'grey') +
+  geom_line(aes(y = sma_8), color = 'red') + labs(title = "8-Month Moving Average Smoothing") +
+  theme(plot.title = element_text(size = 11, face = "bold", hjust = 0.5, margin = margin(b = 10)))
+
+p4 = ggplot(data = ma, aes(x = time)) + geom_line(aes(y = landings), color = 'grey') +
+  geom_line(aes(y = sma_12), color = 'red') + labs(title = "12-Month Moving Average Smoothing") +
+  theme(plot.title = element_text(size = 11, face = "bold", hjust = 0.5, margin = margin(b = 10)))
+
+grid.arrange(p1, p2, p3, p4, ncol = 2)
+
+
+
+```
+# Rolling Standard Deviation
+``` {r rolling_std}
+rolling_std = runSD(rs_ts[, 'landings'], n = 12)
+
+# Plot original data and rolling standard deviation
+plot(rolling_std, main = "Rolling Standard Deviation", ylab = 'Standard Deviation', xlab = 'Time', lwd = 2, col = 'blue')
+```
+
+
+# Plot Monthly Allocation and Vessel Price in Gulf of Mexico
+``` {r plot_xvars}
+autoplot(rs_ts[, c('allocation_price', 'vessel_price')]) + labs(title = 'Monthly Allocation and Vessel Price\n in Gulf of Mexico between 2007-2023', y = 'Price') + theme(plot.title = element_text(size = 14, hjust = 0.5),
+        plot.margin = margin(t = 15, r = 10, b = 10, l = 10))
+```
+
+
+# Show time-series data along with ACF and PACF
+Interpretation ACF shows significant lags decaying slowly, indicating non stationarity
+``` {r acf_pacf}
+# Filter landing column only
+landing_ts = rs_ts[, 'landings']
+tsdisplay(landing_ts, main = 'ACF and PACF Plot of # of Landings')
+```
+
+# Decompose TS into trend, seasonality
+Interpretation: Since variance looks increasing overtime, Holt-Winter Multiplicative Method should be considered
+
+``` {r decomposition}
+decomposed_ts = decompose(landing_ts, type = 'multiplicative')
+
+# library(ggseas)
+library(ggplot2)
+
+autoplot(decomposed_ts) + 
+  ggtitle("Decomposing Time-Series into \nSeasonal, Trend, and Remainder Components") +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        plot.margin = margin(t = 15, r = 10, b = 10, l = 10))
+
+
+# plot(decompose(landing_ts, type = 'additive'))
+```
+
+# Split data into train test split
+``` {r split_data}
+train_df = window(landing_ts, frequency = 12, start = c(2007, 1), end = c(2022, 12))
+test_df = window(landing_ts, frequency = 12, start = c(2023, 1))
+```
+
+# EXPONENTIAL SMOOTHING METHOD
+
+``` {r check_lambda}
+# lambda = BoxCox.lambda(train_df)
+lambda = BoxCox.lambda(train_df)
+train_df_boxcox = BoxCox(train_df, lambda = lambda)
+```
+
+
+# Holts-Winter Additive
+``` {r hw_additive}
+hw_additive = hw(train_df_boxcox, h = 12, seasonal = "additive", level = c(80, 95))
+forecast_hw_additive = hw_additive$mean
+summary(hw_additive)
+```
+
+# Holts-Winter Multiplicative
+``` {r hw_multiplicative}
+hw_multiplicative = hw(train_df, h = 12, seasonal = "multiplicative", level = c(80, 95))
+forecast_hw_multiplicative = hw_multiplicative$mean
+summary(hw_multiplicative)
+
+```
+
+# Holts-Winter Additive with Damping
+``` {r hw_additive_damping}
+hw_additive_damping = hw(train_df_boxcox, h = 12, seasonal = "additive", damped = TRUE, level = c(80, 95))
+forecast_hw_additive_damping = hw_additive_damping$mean
+summary(hw_additive_damping)
+
+```
+
+# Holts-Winter Multiplicative with Damping
+``` {r hw_multiplicative_damping}
+hw_multiplicative_damping = hw(train_df, h = 12, seasonal = "multiplicative", damped = TRUE, level = c(80, 95))
+forecast_hw_multiplicative_damping = hw_multiplicative_damping$mean
+summary(hw_multiplicative_damping)
+```
+
+# Exponential Trend Holts-Winter Multiplicative with Damping
+``` {r hw_exp_multiplicative_damping}
+hw_exp_multiplicative_damping = hw(train_df, h = 12, seasonal = "multiplicative", damped = TRUE, exponential = TRUE, level = c(80, 95))
+forecast_hw_exp_multiplicative_damping = hw_exp_multiplicative_damping$mean
+summary(hw_exp_multiplicative_damping)
+```
+# ETS
+``` {r ets}
+ets_model = ets(train_df)
+forecast_ets_model = forecast(ets_model, h = 12)$mean
+summary(ets_model)
+```
+
+# Seasonal Naive Method
+``` {r snaive}
+snaive = snaive(train_df_boxcox, h = 12)
+forecast_snaive = snaive$mean
+summary(snaive)
+```
+
+# Check accuracy agains test set
+
+summary(hw_exp_multiplicative_damping)$aic
+
+``` {r check_accuracy}
+options(width = 120)
+
+accuracy_hw_additive = accuracy(InvBoxCox(forecast_hw_additive, lambda), test_df)
+accuracy_hw_multiplicative = accuracy(forecast_hw_multiplicative, test_df)
+accuracy_hw_additive_damping = accuracy(InvBoxCox(forecast_hw_additive_damping, lambda), test_df)
+accuracy_hw_multiplicative_damping = accuracy(forecast_hw_multiplicative_damping, test_df)
+accuracy_hw_exp_multiplicative_damping = accuracy(forecast_hw_exp_multiplicative_damping, test_df)
+accuracy_ets = accuracy(forecast_ets_model, test_df)
+accuracy_snaive = accuracy(InvBoxCox(forecast_snaive, lambda), test_df)
+
+result = as.data.frame(rbind(accuracy_hw_additive, 
+                    accuracy_hw_multiplicative, 
+                    accuracy_hw_additive_damping, 
+                    accuracy_hw_multiplicative_damping,
+                    accuracy_hw_exp_multiplicative_damping, 
+                    # accuracy_ets,
+                    accuracy_snaive))
+
+rownames(result) = c('HW Additive', 'HW Multiplicative', 'HW Additive with Damping',
+                     'HW Multiplicative with Damping', 'Exponential HW Multiplicative with Damping',
+                     # 'ETS (MAM)',
+                     'Seasonal Naive')
+
+
+result$AICc = c(2744.608, 5394.614, 2747.643, 5384.184, 5381.935, 'N/A')
+result %>% select(AICc, everything())
+
+plot(hw_additive_damping)
+```
+
+# Model Diagnostic
+``` {r check_model_diagnostic}
+checkresiduals(hw_additive_damping)
+```
+
+
+# ARIMA METHOD
+``` {r arima}
+tsdisplay(train_df)
+lambda = BoxCox.lambda(train_df)
+train_df_boxcox = BoxCox(train_df, lambda = lambda)
+
+train_df_boxcox
+autoplot(train_df_boxcox) + labs(title = 'Monthly Number of Red Snapper Harvested in Gulf of Mexico between 2007-2023',
+                                     y = '# of Landings')
+
+train_df_boxcox_diff = diff(train_df_boxcox, lag = 6)
+tsdisplay(train_df_boxcox_diff)
+
+kpss.test(train_df_boxcox_diff)
+
+auto_arima_model = auto.arima(train_df, lambda = lambda, d = 1, D = 1, seasonal = TRUE)
+auto_arima_model_2 = auto.arima(train_df, lambda = lambda, seasonal = TRUE)
+
+auto_arima_model
+auto_arima_model_2
+
+checkresiduals(auto_arima_model)
+
+auto_arima_model_forecast = forecast(auto_arima_model, h = 12)
+forecast_sarima = auto_arima_model_forecast$mean
+
+accuracy(forecast_sarima, test_df)
+```
+
+# TIME-SERIES REGRESSION
+
+hist(train_df, main="Histogram of Landings", col="blue")
+hist(train_df_all[, 'allocation_price'], main="Histogram of Landings", col="blue")
+hist(train_df_all[, 'vessel_price'], main="Histogram of Landings", col="blue")
+
+``` {r timeseries_regression}
+options(width = 120)
+log_rs_ts = log(rs_ts)
+cor(rs_ts)
+cor(log_rs_ts)
+
+train_df_all = window(log_rs_ts, frequency = 12, start = c(2007, 1), end = c(2022, 12))
+test_df_all = window(log_rs_ts, frequency = 12, start = c(2023, 1))
+
+train_df_all
+
+autoplot(train_df_all[, c('landings', 'allocation_price', 'vessel_price')]) + labs(title = 'Monthly Number of Red Snapper Harvested in Gulf of Mexico between 2007-2023',
+                                     y = '# of Landings')
+
+
+autoplot(train_df_all[, 'allocation_price']) + labs(title = 'Monthly Allocation Price in Gulf of Mexico between 2007-2023', 
+                                                    y = 'Allocation Price')
+
+autoplot(train_df_all[, 'vessel_price']) + labs(title = 'Monthly Vessel Price in Gulf of Mexico between 2007-2023', 
+                                                    y = 'Vessel Price')
+
+linear_model = tslm(train_df_all[, 'landings'] ~ train_df_all[, 'allocation_price'] + train_df_all[, 'vessel_price'])
+linear_model
+
+combined = data.frame(landings = as.numeric(train_df_all[, 'landings']), 
+           allocation_price = as.numeric(train_df_all[, 'allocation_price']), 
+           vessel_price = as.numeric(train_df_all[, 'vessel_price']))
+
+combined_df = combined %>% pivot_longer(names_to = 'variable', values_to = 'value', cols = c('allocation_price', 'vessel_price'))
+
+combined_df
+
+ggplot(data = combined, aes(x = landings, y = allocation_price)) + geom_point() + geom_smooth(method = 'lm', color = 'red') + labs(title = 'Landings vs Allocation Price with Fitted Trend)', x = 'Landings', y = 'Allocation Price')
+
+ggplot(data = combined_df, aes(x = landings, y = value, color = variable)) + geom_point() + geom_smooth(method = 'lm', color = 'red')
+
+summary(linear_model)
+checkresiduals(linear_model)
+```
+
+
+
+# REGRESSION WITH ARMA ERROR
+
+
+``` {r regression_with_arma_error}
+armax_all = auto.arima(train_df_all[, 'landings'], xreg = train_df_all[, 'allocation_price'], D = 1)
+armax_all
+
+armax_ves = auto.arima(train_df_all[, 'landings'], xreg = train_df_all[, 'vessel_price'], D = 1)
+armax_ves
+
+armax_all_ves = auto.arima(train_df_all[, 'landings'], xreg = train_df_all[, c('allocation_price','vessel_price')], D = 1)
+armax_all_ves
+
+checkresiduals(armax_all)
+
+checkresiduals(armax_ves)
+checkresiduals(armax_all_ves)
+
+# forecast of exogeneous variables
+naive_vessel_forecast = naive(train_df_all[, 'vessel_price'], h = 12)
+
+# Vessel price
+vessel_arima = auto.arima(train_df_all[, 'vessel_price'], seasonal = TRUE)
+forecast_vessel_arima = forecast(vessel_arima, h = 12)
+
+snaive_vessel = snaive(train_df_all[, 'vessel_price'])
+forecast_vessel_snaive = forecast(snaive_vessel, h = 12)
+
+accuracy(forecast_vessel_arima$mean, test_df_all[, 'vessel_price'])
+accuracy(forecast_vessel_snaive$mean, test_df_all[, 'vessel_price'])
+
+# Allocation Price
+allocation_arima = auto.arima(train_df_all[, 'allocation_price'], seasonal = TRUE)
+forecast_allocation_arima = forecast(allocation_arima, h = 12)
+
+snaive_allocation = snaive(train_df_all[, 'allocation_price'])
+forecast_allocation_snaive = forecast(snaive_allocation, h = 12)
+
+accuracy(forecast_allocation_arima$mean, test_df_all[, 'allocation_price'])
+accuracy(forecast_allocation_snaive$mean, test_df_all[, 'allocation_price'])
+
+# Landings and Vessel Price
+armax_ves_forecast = forecast(armax_ves, xreg = forecast_vessel_arima$mean, h = 12)
+armax_ves_forecast$mean
+accuracy(exp(armax_ves_forecast$mean), test_df)
+# accuracy(armax_ves_forecast$mean, test_df)
+
+
+# Landings, Allocation Price
+armax_all_forecast = forecast(armax_all, xreg = forecast_allocation_snaive$mean, h = 12)
+armax_all_forecast
+accuracy(exp(armax_all_forecast$mean), test_df)
+# accuracy(armax_all_forecast$mean, test_df)
+
+
+# Landings, Allocation Price, and Vessel Price
+armax_all_vessel_forecast = forecast(armax_all_ves, xreg = cbind(forecast_allocation_snaive$mean, forecast_vessel_arima$mean), h = 12)
+armax_all_vessel_forecast
+accuracy(exp(armax_all_vessel_forecast$mean), test_df)
+# accuracy(armax_all_vessel_forecast$mean, test_df)
+
+```
+
+# VAR
+``` {r var}
+library(vars)
+
+train_df_all
+
+var_model = VAR(train_df_all[, c('landings', 'allocation_price', 'vessel_price')], type = 'both', season = 12, p = 3 )
+summary(var_model)
+
+acf(residuals(var_model))
+
+var_forecast = predict(var_model, n.ahead = 12)
+var_forecast$fcst$landings[, 1]
+
+accuracy(var_forecast$fcst$landings[, 1], test_df)
+```
+
+# SPECTRAL
+``` {r spectral}
+library(TSA)
+periodogram = periodogram(train_df, main = 'Spectral Analysis')
+
+periodogram$freq
+
+Tperiod = (1 / periodogram$freq) / 12
+
+Tperiod
+192/12
+
+96/12
+
+64/12
+```
+
